@@ -2,7 +2,7 @@
 
 const projectRouter = require('express').Router();
 const Project = require('../models/project');
-
+const User = require('../models/user')
 
 
 
@@ -179,5 +179,52 @@ projectRouter.delete('/:id', async (request, response, next) =>{
     }
 })
 
+ 
+
+projectRouter.put('/:id/favorites', async (request, response,next) => {
+    try{
+        const {id} = request.params;
+         
+         
+        const project = await Project.findById(id).populate('user')
+        if(!project){
+            return response.status(404).json({error:'Proyecto no encontrado'})
+        }
+
+
+        
+        const userId = request.user._id.toString()
+
+
+        //   Verificar si el usuario existe
+        const userExists = await User.exists({ _id: userId });
+        if (!userExists) {
+            return response.status(404).json({ error: 'Usuario no encontrado' });
+        }
+
+
+
+        const userFavorites=  project.favorites.some(
+            favId => favId.toString() === userId.toString()
+        );
+
+        //manejo de favoritos agregar o quitar favoritos
+        if(userFavorites){
+            //si el usuario lla dio como favorito lo quitamos
+            project.favorites= project.favorites.filter(favorite => favorite.toString() !== userId.toString())
+        }else{
+            //si el usuario no ha dado a favorites lo agregamos
+            project.favorites.push(userId);
+        }
+
+        const updateProjects = await project.save();
+        response.status(200).json(updateProjects);
+
+    }catch(error){
+        console.error('Error al guardar a favoritos', error)
+        next(error)
+    }
+})
+ 
 
 module.exports= projectRouter;

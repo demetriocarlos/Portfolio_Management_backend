@@ -11,6 +11,9 @@ const axios = require("axios")
 loginRouter.post('/', async (request,response, next) => {
     try{
         const { email, password} = request.body;  // Extraemos el  correo y contraseña del cuerpo de la solicitud
+
+        const trimmedEmail = email.trim().toLowerCase();
+        const trimmedPassword = password.trim()
  
         // Buscamos al usuario por correo en la base de datos
         const user =await User.findOne({email});
@@ -23,7 +26,7 @@ loginRouter.post('/', async (request,response, next) => {
 
         // Si el correo no existe o la contraseña es incorrecta, respondemos con un error 401
         if(!(user && passwordCorrect)){
-            return response.status(401).json({
+            return response.status(401).json({  
                 error:'invalid email or password'
             })
         }
@@ -34,7 +37,7 @@ loginRouter.post('/', async (request,response, next) => {
             id : user._id
         }
 
-        console.log('hola mundo')
+         
         // Firmamos un token JWT con el objeto userForToken y una clave secreta almacenada en las variables de entorno
         const token = jwt.sign(
             userForToken,

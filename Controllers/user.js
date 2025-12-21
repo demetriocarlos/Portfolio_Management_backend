@@ -2,6 +2,7 @@
 const bcrypt = require('bcryptjs')
 const userRouter = require('express').Router()
 const User= require('../models/user')
+const Project= require('../models/project')
 const middleware = require('../utils/middleware');
 
 const multer = require('multer')
@@ -92,10 +93,13 @@ userRouter.post('/signup', async (request, response, next) => {
             return response.status(400).json({error: " el nombre de usuario debe tener almenos 4 caracteres"})
         }
 
+         // ✅ TRIM la contraseña ANTES de hashear
+        const trimmedPassword = password.trim();
+
         // Validar que la contraseña cumpla con los requisitos
-        if(!passwordRegex.test(password)){
+        if(!passwordRegex.test(trimmedPassword)){
             return response.status(400).json({
-                error: "La contraseña debe tener al menos 7 caracteres, incluyendo una letra mayúscula, una letra minúscula y un número."
+                error: "La contraseña debe tener al menos 7 caracteres, incluyendo almenos una letra mayúscula, una letra minúscula y un número."
             })
         }
 
@@ -116,7 +120,7 @@ userRouter.post('/signup', async (request, response, next) => {
 
         const saltRounds = 10;
         // Hashear la contraseña antes de guardar el usuario
-        const passwordHash = await bcrypt.hash(password, saltRounds);
+        const passwordHash = await bcrypt.hash(trimmedPassword, saltRounds);
 
         // Crear un nuevo usuario con el hash de la contraseña
         const user= new User({userName, email,passwordHash});
@@ -133,6 +137,34 @@ userRouter.post('/signup', async (request, response, next) => {
 })
 
 
+ 
+userRouter.get('/:id/stats', middleware.userExtractor , async (request, response, next) => {
+    try {
+        const { id } = request.params;
+        
+        // 1. Contar todos los favoritos de TODOS los proyectos del usuario
+        const projects = await Project.find({ user: id }).populate('favorites');
+        
+        let totalFavorites = 0;
+        
+        
+        projects.forEach(project => {
+            totalFavorites += project.favorites?.length || 0;
+            // projectViews += project.views?.length || 0;
+        });
+        
+        // 2. Retornar estadísticas
+        response.json({
+            userId: id,
+            //totalProjects: projects.length,
+            totalFavorites: totalFavorites,
+             
+        });
+        
+    } catch (error) {
+        next(error);
+    }
+});
 
 
 userRouter.patch('/profile/:id', middleware.userExtractor, async (request, response, next) => {

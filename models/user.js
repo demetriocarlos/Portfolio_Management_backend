@@ -19,7 +19,9 @@ const userSchema = new mongoose.Schema({
     profilePictureId: { type: String },
     createdAt: { type: Date, default: Date.now },
     technologies: { type: [String], default: [] },
-    location: { type: [String], default: [] },
+    location: { type: String,},
+
+
     project:[{
             type:mongoose.Schema.Types.ObjectId,
             ref:'Project'

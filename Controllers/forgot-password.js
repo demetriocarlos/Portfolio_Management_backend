@@ -62,8 +62,10 @@ forgotRouter.put("/reset-password", async (request, response, next) =>{
         if (!user  || user.resetCode !== code || Date.now() > user.resetCodeExpires){
             return response.status(403).json({error:"Código inválido o expirado"})
         }
+
+         const trimmedNewPassword = password.trim();
  
-        user.passwordHash = await bcrypt.hash(password,10)
+        user.passwordHash = await bcrypt.hash(trimmedNewPassword,10)
         user.resetCode= undefined;
         user.resetCodeExpires = undefined;
 
