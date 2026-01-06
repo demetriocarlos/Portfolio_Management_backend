@@ -17,15 +17,19 @@ const sendContactEmail = async ({ to, subject, message, from }) => {
     // Configuración ÚNICA que prueba ambos puertos
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
-      port:  isProduction  ? 465 : 587,
-      secure: isProduction , // true para 465, false para 587
+      port:  587, //isProduction  ? 465 : 587,
+      secure: false, //isProduction , // true para 465, false para 587
       auth: {
         user: process.env.EMAIL_USER,
         pass: process.env.EMAIL_PASS
       },
       tls: {
         rejectUnauthorized: false //  CLAVE PARA RENDER
-      }
+      },
+      // Configuración extendida para timeout
+      connectionTimeout: 60000, // 60 segundos
+      greetingTimeout: 30000,
+      socketTimeout: 60000
     });
 
     const info = await transporter.sendMail({
