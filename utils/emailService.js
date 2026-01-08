@@ -1,116 +1,78 @@
- 
-const nodemailer = require('nodemailer');
- 
-// utils/emailService.js - VERSIÓN MÍNIMA
- 
+ const nodemailer = require('nodemailer');
+
+ const transporter = nodemailer.createTransport({
+  host: 'smtp.sendgrid.net',
+  port: 587,
+  auth: {
+    user: 'apikey',
+    pass: process.env.SENDGRID_API_KEY
+  },
+  // Añadir esto para Render
+  tls: {
+    rejectUnauthorized: false
+  }
+});
+
+
+transporter.verify((error, success) => {
+  if (error) {
+    console.log('❌ Error conectando a SendGrid:', error.message);
+  } else {
+    console.log('✅ SendGrid configurado correctamente');
+    
+  }
+});
+
+
+
 const sendContactEmail = async ({ to, subject, message, from }) => {
-
-  const isProduction = process.env.NODE_ENV === 'production';
-     
   try {
-     
-   // SOLO log en desarrollo
-    if (!isProduction) {
-      console.log('📤 Enviando email...');
-    }
+    //console.log(`📤 Enviando email de ${from} a ${to}...`);
     
-    // Configuración ÚNICA que prueba ambos puertos
-    const transporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port:  587, //isProduction  ? 465 : 587,
-      secure: false, //isProduction , // true para 465, false para 587
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS
-      },
-      tls: {
-        rejectUnauthorized: false //  CLAVE PARA RENDER
-      },
-      // Configuración extendida para timeout
-      connectionTimeout: 60000, // 60 segundos
-      greetingTimeout: 30000,
-      socketTimeout: 60000
-    });
-
-    const info = await transporter.sendMail({
-      from: `"Portfolio" <${process.env.EMAIL_USER}>`,
+    const mailOptions = {
+      from: `"Portfolio App" <${process.env.EMAIL_USER || 'contacto@portfolio.com'}>`,
       to: to,
-      subject: subject || 'Nuevo mensaje',
+      subject: subject || `Mensaje de ${from}`,
       text: `De: ${from}\n\n${message}`,
-      replyTo: from
-    });
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+          <h2 style="color: #4F46E5;">Nuevo mensaje desde Portfolio App</h2>
+          <p><strong>De:</strong> ${from}</p>
+          <p><strong>Mensaje:</strong></p>
+          <div style="background: #F3F4F6; padding: 15px; border-radius: 5px;">
+            ${message.replace(/\n/g, '<br>')}
+          </div>
+          <p style="color: #6B7280; font-size: 14px; margin-top: 20px;">
+            ⚡ Enviado desde Portfolio App
+          </p>
+        </div>
+      `,
+      replyTo: from,  // correo del visitante
+    };
 
-     // Éxito: log mínimo en producción, completo en desarrollo
-    if (isProduction) {
-      console.log('✅ Email enviado'); // Solo esto en producción
-    } else {
-      console.log('✅ Email enviado:', info.messageId, 'a:', to);
-    }
-
-
-    return { success: true, messageId: info.messageId };
-
-  } catch (error) {
-    console.error('❌ Error:', error.message);
-
-    // Info adicional solo en desarrollo
-    if (!isProduction) {
-      console.error('Código:', error.code);
-      console.error('Stack:', error.stack);
-    }
+    const info = await transporter.sendMail(mailOptions);
     
-    // Simular éxito siempre para el frontend
-    console.log(`📝 Registrado: ${from} → ${to}`);
+    console.log('✅ Email enviado correctamente');
+    //console.log('   Message ID:', info.messageId);
     
     return {
       success: true,
+      messageId: info.messageId
+    };
+
+  } catch (error) {
+    console.error('❌ Error enviando email:', error.message);
+    
+    // Fallback simple
+    
+    
+    return {
+      success: true, // Siempre true para el frontend
       simulated: true,
       messageId: 'log-' + Date.now(),
       note: 'Mensaje registrado en sistema'
     };
   }
-};
+}; 
 
-module.exports = { sendContactEmail };
-
-
-/*
-const transporter = nodemailer.createTransport({
-  service: "gmail", // Usa Gmail
-  auth: {
-    user: process.env.EMAIL_USER,  
-    pass: process.env.EMAIL_PASS,  
-  },
-});
-
-transporter.verify((error, success) => {
-  if (error) console.error("Error al conectar con Gmail:", error);
-  else console.log("Servidor de correo listo para enviar mensajes ✔️");
-});
-
-
-const sendContactEmail = async ({to,subject, message, from}) =>{
-    const mailOptions = {
-        from: `"Portafolio Contacto" <${process.env.EMAIL_USER}>`,  // remitente fijo
-        to,  // correo del propietario del portafolio
-        subject,
-        text:message,
-        replyTo: from, // correo del visitante
-    };
-
-    try {
-    await transporter.sendMail(mailOptions);
-     
-  } catch (error) {
-    console.error("❌ Error al enviar el correo:", error);
-    throw error;
-  }
-
-
-
-module.exports={sendContactEmail};
-
-*/
-
-
-
+module.exports = {  sendContactEmail };
